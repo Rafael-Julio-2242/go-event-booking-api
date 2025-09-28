@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"event-booking-rest-api/db"
 	"time"
 )
@@ -74,6 +75,68 @@ func (e Event) Delete() error {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(e.ID)
+
+	return err
+}
+
+func (e Event) VerifyUserRegistration(userId int64) (bool, error) {
+	query := "SELECT userId, eventId FROM registrations WHERE userId = ? AND eventId = ?"
+
+	stmt, err := db.DB.Prepare(query)
+
+	if err != nil {
+		return false, err
+	}
+
+	var uId, eId int64
+
+	row := stmt.QueryRow(userId, e.ID)
+	err = row.Scan(&uId, &eId)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (e Event) RegisterUser(userId int64) error {
+	query := `
+		INSERT INTO registrations(eventId, userId) VALUES (?, ?)
+	`
+
+	stmt, err := db.DB.Prepare(query)
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+	_, err = stmt.Exec(e.ID, userId)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e Event) UnregisterUser(userId int64) error {
+	query := `
+		DELETE FROM registrations WHERE userId = ? AND eventId = ?
+	`
+
+	stmt, err := db.DB.Prepare(query)
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+	_, err = stmt.Exec(userId, e.ID)
 
 	return err
 }
