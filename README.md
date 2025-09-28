@@ -405,28 +405,3 @@ Unregister from Event (id=1)
 curl -s -X DELETE http://localhost:8080/events/1/register \
   -H "Authorization: $TOKEN"
 ```
-
----
-
-## Notes & Limitations
-
-- The `Authorization` header expects the raw JWT token (no `Bearer` prefix) as per `middlewares/auth.go`.
-- JWT secret is hardcoded (`utils/jwt.go`). For production, externalize to environment variables.
-- No pagination or filtering on `GET /events`.
-- Error messages and some status codes (e.g., `users.go` returns 200 on bad body) could be refined.
-- No CORS configuration added; add as needed for browser clients.
-
----
-
-## Development Tips
-
-- Modify DB schema in `db/db.go` (or move to migrations tool if desired).
-- Add validation layers as needed. Current binding tags exist in `models/event.go` and `models/user.go`, and are used via Gin's `ShouldBindJSON`/`ShouldBindBodyWithJSON`.
-- Consider updating middleware to accept `Authorization: Bearer <token>`.
-- Replace the hardcoded JWT secret and port with environment variables.
-
----
-
-## License
-
-This project is provided as-is with no specific license defined. Add a license file if you intend to distribute it.
