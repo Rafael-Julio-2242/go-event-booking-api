@@ -3,7 +3,8 @@
 A simple event booking REST API built with Go, Gin, SQLite, and JWT authentication. It supports user signup/login, CRUD for events, and event registrations.
 
 - **Framework**: Gin (`github.com/gin-gonic/gin`)
-- **Database**: SQLite (`github.com/mattn/go-sqlite3`)
+- **Database**: SQLite (`gorm.io/driver/sqlite`)
+- **ORM:** Gorm (`github.com/go-gorm/gorm`)
 - **Auth**: JWT (`github.com/golang-jwt/jwt/v5`)
 - **Password Hashing**: bcrypt (`golang.org/x/crypto/bcrypt`)
 - **Go Version**: declared in `go.mod` (`go 1.24.x`)
@@ -37,9 +38,9 @@ A simple event booking REST API built with Go, Gin, SQLite, and JWT authenticati
 
 ## How it works
 
-- The server starts in `main.go` on port `:8080` and calls `db.InitDB()` which:
+- The server starts in `main.go` on port `:8080`, calls `db.InitDB()` which:
   - Opens/creates `api.db` (SQLite)
-  - Creates tables `users`, `events`, and `registrations` if missing (`db/db.go`)
+  - And then, in the `main.go` file, creates tables `users`, `events`, and `registrations` if missing (`db/db.go`)
 - Routes are registered in `routes/routes.go`.
   - Public: `GET /events`, `GET /events/:id`, `POST /signup`, `POST /login`
   - Authenticated: `POST /events`, `PUT /events/:id`, `DELETE /events/:id`, `POST /events/:id/register`, `DELETE /events/:id/register`
