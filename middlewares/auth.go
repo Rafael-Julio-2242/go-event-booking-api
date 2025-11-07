@@ -8,12 +8,19 @@ import (
 )
 
 func Authenticate(context *gin.Context) {
-	token := context.Request.Header.Get("Authorization")
+	tokenValue := context.Request.Header.Get("Authorization")
 
-	if token == "" {
+	if tokenValue == "" {
 		context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 		return
 	}
+
+	if tokenValue[:7] != "Bearer " {
+		context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
+		return
+	}
+
+	token := tokenValue[7:]
 
 	userId, err := utils.VerifyToken(token)
 

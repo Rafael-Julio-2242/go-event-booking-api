@@ -16,7 +16,7 @@ func registerForEvent(context *gin.Context) {
 		return
 	}
 
-	userId := context.GetInt64("userId")
+	userId := context.GetUint("userId")
 
 	eventId, err := strconv.ParseInt(id, 10, 64)
 
@@ -62,7 +62,7 @@ func cancelRegistration(context *gin.Context) {
 		return
 	}
 
-	userId := context.GetInt64("userId")
+	userId := context.GetUint("userId")
 
 	eventId, err := strconv.ParseInt(id, 10, 64)
 

@@ -4,63 +4,48 @@ import (
 	"errors"
 	"event-booking-rest-api/db"
 	"event-booking-rest-api/utils"
+
+	"gorm.io/gorm"
 )
 
 type User struct {
-	ID       int64
-	Email    string `binding:"required"`
-	Password string `binding:"required"`
+	ID       uint   `gorm:"primarykey;autoIncrement"`
+	Email    string `binding:"required" gorm:"unique;not null"`
+	Password string `binding:"required" gorm:"not null"`
 }
 
 func (u *User) Save() error {
-	query := `
-		INSERT INTO users(email, password)
-		VALUES (?, ?)
-	`
-	stmt, err := db.DB.Prepare(query)
-
-	if err != nil {
-		return err
-	}
-
-	defer stmt.Close()
-
 	hashedPassword, err := utils.HashPassword(u.Password)
 
 	if err != nil {
 		return err
 	}
 
-	result, err := stmt.Exec(u.Email, hashedPassword)
+	u.Password = hashedPassword
 
-	if err != nil {
-		return err
+	result := db.DB.Create(u)
+
+	if result.Error != nil {
+		return result.Error
 	}
-
-	userId, err := result.LastInsertId()
-
-	if err != nil {
-		return err
-	}
-
-	u.ID = userId
 
 	return nil
 }
 
 func (u *User) ValidateCredentials() error {
-	query := "SELECT id, password FROM users WHERE email = ?"
-	row := db.DB.QueryRow(query, u.Email)
+	var retrievedUser User
 
-	var retrievedPassword string
+	result := db.DB.Where("email = ?", u.Email).First(&retrievedUser)
 
-	err := row.Scan(&u.ID, &retrievedPassword)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return errors.New("credentials invalid")
+		}
 
-	if err != nil {
-		return errors.New("credentials invalid")
+		return result.Error
 	}
 
-	passwordIsValid := utils.CheckPasswordHash(u.Password, retrievedPassword)
+	passwordIsValid := utils.CheckPasswordHash(u.Password, retrievedUser.Password)
 
 	if !passwordIsValid {
 		return errors.New("credentials invalid")
