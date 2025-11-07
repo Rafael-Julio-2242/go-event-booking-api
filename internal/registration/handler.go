@@ -1,14 +1,14 @@
-package routes
+package registration
 
 import (
-	"event-booking-rest-api/models"
+	"event-booking-rest-api/pkg/models"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-func registerForEvent(context *gin.Context) {
+func RegisterForEvent(context *gin.Context) {
 	id := context.Param("id")
 
 	if id == "" {
@@ -26,6 +26,11 @@ func registerForEvent(context *gin.Context) {
 	}
 
 	event, err := models.GetEventById(eventId)
+
+	if event == nil && err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Event not found"})
+		return
+	}
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch Event"})
@@ -54,7 +59,7 @@ func registerForEvent(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{"message": "User Registered successfully"})
 }
 
-func cancelRegistration(context *gin.Context) {
+func CancelRegistration(context *gin.Context) {
 	id := context.Param("id")
 
 	if id == "" {

@@ -2,8 +2,8 @@ package models
 
 import (
 	"errors"
-	"event-booking-rest-api/db"
-	"event-booking-rest-api/utils"
+	"event-booking-rest-api/internal/auth"
+	"event-booking-rest-api/pkg/db"
 
 	"gorm.io/gorm"
 )
@@ -15,14 +15,6 @@ type User struct {
 }
 
 func (u *User) Save() error {
-	hashedPassword, err := utils.HashPassword(u.Password)
-
-	if err != nil {
-		return err
-	}
-
-	u.Password = hashedPassword
-
 	result := db.DB.Create(u)
 
 	if result.Error != nil {
@@ -45,7 +37,7 @@ func (u *User) ValidateCredentials() error {
 		return result.Error
 	}
 
-	passwordIsValid := utils.CheckPasswordHash(u.Password, retrievedUser.Password)
+	passwordIsValid := auth.CheckPasswordHash(u.Password, retrievedUser.Password)
 
 	if !passwordIsValid {
 		return errors.New("credentials invalid")

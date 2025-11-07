@@ -1,10 +1,11 @@
-package utils
+package auth
 
 import (
 	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const secretKey = "supersecret"
@@ -48,4 +49,16 @@ func VerifyToken(token string) (uint, error) {
 	userId := uint(claims["userId"].(float64))
 
 	return userId, nil
+}
+
+func HashPassword(password string) (string, error) {
+
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+
+	return string(bytes), err
+}
+
+func CheckPasswordHash(password, hashedPassword string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return err == nil
 }

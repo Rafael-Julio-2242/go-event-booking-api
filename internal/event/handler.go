@@ -1,15 +1,16 @@
-package routes
+package event
 
 import (
-	"event-booking-rest-api/models"
 	"fmt"
 	"net/http"
 	"strconv"
 
+	"event-booking-rest-api/pkg/models"
+
 	"github.com/gin-gonic/gin"
 )
 
-func getEvent(context *gin.Context) {
+func GetEvent(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 
 	if err != nil {
@@ -30,7 +31,7 @@ func getEvent(context *gin.Context) {
 	context.JSON(http.StatusOK, event)
 }
 
-func getEvents(context *gin.Context) {
+func GetEvents(context *gin.Context) {
 	events, err := models.GetAllEvents()
 
 	if err != nil {
@@ -41,7 +42,7 @@ func getEvents(context *gin.Context) {
 	context.JSON(http.StatusOK, events)
 }
 
-func createEvent(context *gin.Context) {
+func CreateEvent(context *gin.Context) {
 
 	var event models.Event
 	err := context.ShouldBindJSON(&event)
@@ -68,7 +69,7 @@ func createEvent(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{"message": "Event created!", "event": event})
 }
 
-func updateEvent(context *gin.Context) {
+func UpdateEvent(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse event id"})
@@ -116,7 +117,7 @@ func updateEvent(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"message": "event updated successfully", "updated_event": updatedEvent})
 }
 
-func deleteEvent(context *gin.Context) {
+func DeleteEvent(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 
 	if err != nil {
@@ -126,8 +127,12 @@ func deleteEvent(context *gin.Context) {
 
 	event, err := models.GetEventById(id)
 
+	if event == nil && err == nil {
+		context.JSON(http.StatusNotFound, gin.H{"message": "Event not found"})
+		return
+	}
+
 	if err != nil {
-		fmt.Println(err)
 		context.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Could not fetch event",
 		})

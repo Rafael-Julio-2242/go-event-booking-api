@@ -1,9 +1,9 @@
 package main
 
 import (
-	"event-booking-rest-api/db"
-	"event-booking-rest-api/models"
-	"event-booking-rest-api/routes"
+	"event-booking-rest-api/internal/routes"
+	"event-booking-rest-api/pkg/db"
+	"event-booking-rest-api/pkg/models"
 
 	"github.com/gin-gonic/gin"
 )

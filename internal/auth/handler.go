@@ -1,7 +1,6 @@
-package middlewares
+package auth
 
 import (
-	"event-booking-rest-api/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +21,7 @@ func Authenticate(context *gin.Context) {
 
 	token := tokenValue[7:]
 
-	userId, err := utils.VerifyToken(token)
+	userId, err := VerifyToken(token)
 
 	if err != nil {
 		context.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})

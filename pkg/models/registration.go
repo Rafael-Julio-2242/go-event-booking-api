@@ -1,6 +1,6 @@
 package models
 
-import "event-booking-rest-api/db"
+import "event-booking-rest-api/pkg/db"
 
 type Registration struct {
 	ID      uint `gorm:"primaryKey;autoIncrement"`

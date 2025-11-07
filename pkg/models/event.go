@@ -2,8 +2,9 @@ package models
 
 import (
 	"errors"
-	"event-booking-rest-api/db"
 	"time"
+
+	"event-booking-rest-api/pkg/db"
 
 	"gorm.io/gorm"
 )
@@ -18,7 +19,6 @@ type Event struct {
 }
 
 func (e *Event) Save() error {
-	// later: add it to database
 	result := db.DB.Create(e)
 
 	if result.Error != nil {
@@ -95,7 +95,7 @@ func GetEventById(id int64) (*Event, error) {
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, errors.New("event not found")
+			return nil, nil
 		}
 		return nil, result.Error
 	}

@@ -1,14 +1,14 @@
-package routes
+package user
 
 import (
-	"event-booking-rest-api/models"
-	"event-booking-rest-api/utils"
+	"event-booking-rest-api/internal/auth"
+	"event-booking-rest-api/pkg/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func signup(context *gin.Context) {
+func Signup(context *gin.Context) {
 	var user models.User
 
 	err := context.ShouldBindBodyWithJSON(&user)
@@ -17,6 +17,15 @@ func signup(context *gin.Context) {
 		context.JSON(http.StatusOK, gin.H{"message": "Could not parse request data."})
 		return
 	}
+
+	hashedPassword, err := auth.HashPassword(user.Password)
+
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not hash password!"})
+		return
+	}
+
+	user.Password = hashedPassword
 
 	err = user.Save()
 
@@ -28,7 +37,7 @@ func signup(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{"message": "User created successfully"})
 }
 
-func login(context *gin.Context) {
+func Login(context *gin.Context) {
 	var user models.User
 
 	err := context.ShouldBindBodyWithJSON(&user)
@@ -45,7 +54,7 @@ func login(context *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateToken(user.Email, user.ID)
+	token, err := auth.GenerateToken(user.Email, user.ID)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not authenticate User"})
