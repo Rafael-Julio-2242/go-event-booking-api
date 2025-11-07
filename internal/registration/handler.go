@@ -6,9 +6,18 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func RegisterForEvent(context *gin.Context) {
+type RegistrationHandler struct {
+	dbConn *gorm.DB
+}
+
+func NewRegistrationHandler(dbConn *gorm.DB) *RegistrationHandler {
+	return &RegistrationHandler{dbConn: dbConn}
+}
+
+func (rh *RegistrationHandler) RegisterForEvent(context *gin.Context) {
 	id := context.Param("id")
 
 	if id == "" {
@@ -25,7 +34,7 @@ func RegisterForEvent(context *gin.Context) {
 		return
 	}
 
-	event, err := models.GetEventById(eventId)
+	event, err := models.GetEventById(eventId, rh.dbConn)
 
 	if event == nil && err == nil {
 		context.JSON(http.StatusNotFound, gin.H{"message": "Event not found"})
@@ -37,7 +46,7 @@ func RegisterForEvent(context *gin.Context) {
 		return
 	}
 
-	isRegistered, err := event.VerifyUserRegistration(userId)
+	isRegistered, err := event.VerifyUserRegistration(userId, rh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify user registration"})
@@ -49,7 +58,7 @@ func RegisterForEvent(context *gin.Context) {
 		return
 	}
 
-	err = event.RegisterUser(userId)
+	err = event.RegisterUser(userId, rh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to register user"})
@@ -59,7 +68,7 @@ func RegisterForEvent(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{"message": "User Registered successfully"})
 }
 
-func CancelRegistration(context *gin.Context) {
+func (rh *RegistrationHandler) CancelRegistration(context *gin.Context) {
 	id := context.Param("id")
 
 	if id == "" {
@@ -76,14 +85,14 @@ func CancelRegistration(context *gin.Context) {
 		return
 	}
 
-	event, err := models.GetEventById(eventId)
+	event, err := models.GetEventById(eventId, rh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to fetch Event"})
 		return
 	}
 
-	isRegistered, err := event.VerifyUserRegistration(userId)
+	isRegistered, err := event.VerifyUserRegistration(userId, rh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to verify user registration"})
@@ -95,7 +104,7 @@ func CancelRegistration(context *gin.Context) {
 		return
 	}
 
-	err = event.UnregisterUser(userId)
+	err = event.UnregisterUser(userId, rh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to register user"})

@@ -4,8 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"event-booking-rest-api/pkg/db"
-
 	"gorm.io/gorm"
 )
 
@@ -18,8 +16,8 @@ type Event struct {
 	UserID      uint      `gorm:"not null"`
 }
 
-func (e *Event) Save() error {
-	result := db.DB.Create(e)
+func (e *Event) Save(dbConn *gorm.DB) error {
+	result := dbConn.Create(e)
 
 	if result.Error != nil {
 		return result.Error
@@ -28,8 +26,8 @@ func (e *Event) Save() error {
 	return nil
 }
 
-func (e Event) Update() error {
-	result := db.DB.Save(&e)
+func (e Event) Update(dbConn *gorm.DB) error {
+	result := dbConn.Save(&e)
 
 	if result.Error != nil {
 		return result.Error
@@ -38,8 +36,8 @@ func (e Event) Update() error {
 	return nil
 }
 
-func (e Event) Delete() error {
-	result := db.DB.Delete(&e)
+func (e Event) Delete(dbConn *gorm.DB) error {
+	result := dbConn.Delete(&e)
 
 	if result.Error != nil {
 		return result.Error
@@ -47,8 +45,8 @@ func (e Event) Delete() error {
 	return nil
 }
 
-func (e Event) VerifyUserRegistration(userId uint) (bool, error) {
-	result := db.DB.Where("user_id = ? AND event_id = ?", userId, e.ID).First(&Registration{})
+func (e Event) VerifyUserRegistration(userId uint, dbConn *gorm.DB) (bool, error) {
+	result := dbConn.Where("user_id = ? AND event_id = ?", userId, e.ID).First(&Registration{})
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -61,25 +59,25 @@ func (e Event) VerifyUserRegistration(userId uint) (bool, error) {
 	return true, nil
 }
 
-func (e Event) RegisterUser(userId uint) error {
+func (e Event) RegisterUser(userId uint, dbConn *gorm.DB) error {
 
 	registration := Registration{
 		UserId:  userId,
 		EventId: e.ID,
 	}
 
-	return registration.Save()
+	return registration.Save(dbConn)
 }
 
-func (e Event) UnregisterUser(userId uint) error {
-	result := db.DB.Where("user_id = ? AND event_id = ?", userId, e.ID).Delete(&Registration{})
+func (e Event) UnregisterUser(userId uint, dbConn *gorm.DB) error {
+	result := dbConn.Where("user_id = ? AND event_id = ?", userId, e.ID).Delete(&Registration{})
 	return result.Error
 }
 
-func GetAllEvents() ([]Event, error) {
+func GetAllEvents(dbConn *gorm.DB) ([]Event, error) {
 	var events []Event
 
-	result := db.DB.Find(&events)
+	result := dbConn.Find(&events)
 
 	if result.Error != nil {
 		return nil, result.Error
@@ -88,10 +86,10 @@ func GetAllEvents() ([]Event, error) {
 	return events, nil
 }
 
-func GetEventById(id int64) (*Event, error) {
+func GetEventById(id int64, dbConn *gorm.DB) (*Event, error) {
 	var event Event
 
-	result := db.DB.First(&event, id)
+	result := dbConn.First(&event, id)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {

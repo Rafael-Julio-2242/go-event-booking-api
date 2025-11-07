@@ -2,14 +2,19 @@ package routes
 
 import (
 	"event-booking-rest-api/internal/auth"
-	eventHandler "event-booking-rest-api/internal/event"
-	registrationHandler "event-booking-rest-api/internal/registration"
-	userHandler "event-booking-rest-api/internal/user"
+	"event-booking-rest-api/internal/event"
+	"event-booking-rest-api/internal/registration"
+	"event-booking-rest-api/internal/user"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func RegisterRoutes(server *gin.Engine) {
+func RegisterRoutes(server *gin.Engine, dbConn *gorm.DB) {
+
+	userHandler := user.NewUserHandler(dbConn)
+	eventHandler := event.NewEventHandler(dbConn)
+	registrationHandler := registration.NewRegistrationHandler(dbConn)
 
 	server.GET("/events", eventHandler.GetEvents)
 	server.GET("/events/:id", eventHandler.GetEvent)

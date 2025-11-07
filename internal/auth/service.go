@@ -11,6 +11,9 @@ import (
 const secretKey = "supersecret"
 
 func GenerateToken(email string, userId uint) (string, error) {
+	if email == "" || userId <= 0 {
+		return "", errors.New("invalid email or userId")
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email":  email,
 		"userId": userId,

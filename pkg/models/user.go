@@ -3,7 +3,6 @@ package models
 import (
 	"errors"
 	"event-booking-rest-api/internal/auth"
-	"event-booking-rest-api/pkg/db"
 
 	"gorm.io/gorm"
 )
@@ -14,8 +13,8 @@ type User struct {
 	Password string `binding:"required" gorm:"not null"`
 }
 
-func (u *User) Save() error {
-	result := db.DB.Create(u)
+func (u *User) Save(dbConn *gorm.DB) error {
+	result := dbConn.Create(u)
 
 	if result.Error != nil {
 		return result.Error
@@ -24,10 +23,10 @@ func (u *User) Save() error {
 	return nil
 }
 
-func (u *User) ValidateCredentials() error {
+func (u *User) ValidateCredentials(dbConn *gorm.DB) error {
 	var retrievedUser User
 
-	result := db.DB.Where("email = ?", u.Email).First(&retrievedUser)
+	result := dbConn.Where("email = ?", u.Email).First(&retrievedUser)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {

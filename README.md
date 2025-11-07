@@ -16,37 +16,43 @@ A simple event booking REST API built with Go, Gin, SQLite, and JWT authenticati
 ```
 .
 ├── api.db                         # SQLite database file (auto-created)
-├── db/
-│   └── db.go                      # DB initialization and schema creation
-├── main.go                        # App entrypoint (server startup)
-├── middlewares/
-│   └── auth.go                    # JWT auth middleware
-├── models/
-│   ├── event.go                   # Event model and DB operations
-│   └── user.go                    # User model and DB operations
-├── routes/
-│   ├── events.go                  # Event handlers
-│   ├── register.go                # Registration handlers (register/unregister)
-│   ├── routes.go                  # Routes wiring
-│   └── users.go                   # Auth handlers (signup/login)
-└── utils/
-    ├── hash.go                    # bcrypt hashing utilities
-    └── jwt.go                     # JWT generation/verification
+├── cmd/
+│   └── api/
+│       └── main.go                # App entrypoint (server startup)
+├── internal/
+│   ├── auth/
+│   │   ├── handler.go             # Auth middleware (Bearer token)
+│   │   └── service.go             # JWT generation/verification and password hashing
+│   ├── event/
+│   │   └── handler.go             # Event handlers
+│   ├── registration/
+│   │   └── handler.go             # Registration handlers (register/unregister)
+│   ├── routes/
+│   │   └── router.go              # Routes wiring
+│   └── user/
+│       └── handler.go             # Auth handlers (signup/login)
+└── pkg/
+    ├── db/
+    │   └── gorm.go                # DB initialization
+    └── models/
+        ├── event.go               # Event model and DB operations
+        ├── registration.go        # Registration model and DB operations
+        └── user.go                # User model and DB operations
 ```
 
 ---
 
 ## How it works
 
-- The server starts in `main.go` on port `:8080`, calls `db.InitDB()` which:
+- The server starts from `cmd/api/main.go` on port `:8080`, calls `db.InitDB()` which:
   - Opens/creates `api.db` (SQLite)
-  - And then, in the `main.go` file, creates tables `users`, `events`, and `registrations` if missing (`db/db.go`)
-- Routes are registered in `routes/routes.go`.
+  - Runs auto-migrations for `users`, `events`, and `registrations`
+- Routes are registered in `internal/routes/router.go`.
   - Public: `GET /events`, `GET /events/:id`, `POST /signup`, `POST /login`
   - Authenticated: `POST /events`, `PUT /events/:id`, `DELETE /events/:id`, `POST /events/:id/register`, `DELETE /events/:id/register`
-- Auth middleware (`middlewares/auth.go`) expects an `Authorization` header containing the raw JWT token string. Note: it does not parse the `Bearer` prefix.
-- Passwords are hashed via bcrypt in `utils/hash.go`.
-- JWT tokens are generated/verified in `utils/jwt.go` (HS256). Default secret is hardcoded as `supersecret`.
+- Auth middleware (`internal/auth/handler.go`) expects an `Authorization` header with the `Bearer` scheme.
+- Passwords are hashed via bcrypt in `internal/auth/service.go`.
+- JWT tokens are generated/verified in `internal/auth/service.go` (HS256). Default secret is hardcoded as `supersecret`.
 
 ---
 
@@ -72,9 +78,9 @@ A local SQLite DB file `api.db` will be created in the project root with the req
 
 ## Configuration
 
-- JWT Secret: defined in `utils/jwt.go` as `const secretKey = "supersecret"`.
+- JWT Secret: defined in `internal/auth/service.go` as `const secretKey = "supersecret"`.
   - For production, change this value and consider loading from environment variables.
-- Port: hardcoded in `main.go` as `:8080`.
+- Port: hardcoded in `cmd/api/main.go` as `:8080`.
 - Database: SQLite file `api.db` in the project root.
 
 ---
@@ -105,9 +111,8 @@ A local SQLite DB file `api.db` will be created in the project root with the req
 
 - Sign up and login endpoints are public.
 - After logging in, you receive a JWT (`HS256`) with claims: `email`, `userId`, `exp`.
-- To access protected endpoints, send the token in the `Authorization` header.
-  - Important: The middleware expects the raw token without `Bearer`.
-  - Example: `Authorization: <token>`
+- To access protected endpoints, send the token in the `Authorization` header using the Bearer scheme.
+  - Example: `Authorization: Bearer <token>`
 
 ---
 
@@ -191,7 +196,7 @@ Success Response (200)
     "Name": "Go Conference",
     "Description": "All about Go",
     "Location": "SF",
-    "DateTime": "2025-09-28T12:00:00Z",
+    "dateTime": "2025-09-28T12:00:00Z",
     "UserID": 2
   }
 ]
@@ -209,7 +214,7 @@ Success Response (200)
   "Name": "Go Conference",
   "Description": "All about Go",
   "Location": "SF",
-  "DateTime": "2025-09-28T12:00:00Z",
+  "dateTime": "2025-09-28T12:00:00Z",
   "UserID": 2
 }
 ```
@@ -238,7 +243,7 @@ Request
   "Name": "Go Conference",
   "Description": "All about Go",
   "Location": "SF",
-  "DateTime": "2025-09-28T12:00:00Z"
+  "dateTime": "2025-09-28T12:00:00Z"
 }
 ```
 
@@ -251,7 +256,7 @@ Success Response (201)
     "Name": "Go Conference",
     "Description": "All about Go",
     "Location": "SF",
-    "DateTime": "2025-09-28T12:00:00Z",
+    "dateTime": "2025-09-28T12:00:00Z",
     "UserID": 2
   }
 }
@@ -278,7 +283,7 @@ Request (any updatable fields)
   "Name": "Updated Name",
   "Description": "Updated desc",
   "Location": "NYC",
-  "DateTime": "2025-10-01T16:00:00Z"
+  "dateTime": "2025-10-01T16:00:00Z"
 }
 ```
 
@@ -291,7 +296,7 @@ Success Response (200)
     "Name": "Updated Name",
     "Description": "Updated desc",
     "Location": "NYC",
-    "DateTime": "2025-10-01T16:00:00Z",
+    "dateTime": "2025-10-01T16:00:00Z",
     "UserID": 2
   }
 }
@@ -385,9 +390,9 @@ TOKEN=$(curl -s -X POST http://localhost:8080/login \
 Create Event
 ```
 curl -s -X POST http://localhost:8080/events \
-  -H "Authorization: $TOKEN" \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"Name":"Go Conference","Description":"All about Go","Location":"SF","DateTime":"2025-09-28T12:00:00Z"}'
+  -d '{"Name":"Go Conference","Description":"All about Go","Location":"SF","dateTime":"2025-09-28T12:00:00Z"}'
 ```
 
 List Events
@@ -398,11 +403,11 @@ curl -s http://localhost:8080/events | jq
 Register for Event (id=1)
 ```
 curl -s -X POST http://localhost:8080/events/1/register \
-  -H "Authorization: $TOKEN"
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 Unregister from Event (id=1)
 ```
 curl -s -X DELETE http://localhost:8080/events/1/register \
-  -H "Authorization: $TOKEN"
+  -H "Authorization: Bearer $TOKEN"
 ```

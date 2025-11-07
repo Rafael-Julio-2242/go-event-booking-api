@@ -8,9 +8,18 @@ import (
 	"event-booking-rest-api/pkg/models"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func GetEvent(context *gin.Context) {
+type EventHandler struct {
+	dbConn *gorm.DB
+}
+
+func NewEventHandler(dbConn *gorm.DB) *EventHandler {
+	return &EventHandler{dbConn: dbConn}
+}
+
+func (eh *EventHandler) GetEvent(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 
 	if err != nil {
@@ -18,7 +27,7 @@ func GetEvent(context *gin.Context) {
 		return
 	}
 
-	event, err := models.GetEventById(id)
+	event, err := models.GetEventById(id, eh.dbConn)
 
 	if err != nil {
 		fmt.Println(err)
@@ -31,8 +40,8 @@ func GetEvent(context *gin.Context) {
 	context.JSON(http.StatusOK, event)
 }
 
-func GetEvents(context *gin.Context) {
-	events, err := models.GetAllEvents()
+func (eh *EventHandler) GetEvents(context *gin.Context) {
+	events, err := models.GetAllEvents(eh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not fetch events."})
@@ -42,7 +51,7 @@ func GetEvents(context *gin.Context) {
 	context.JSON(http.StatusOK, events)
 }
 
-func CreateEvent(context *gin.Context) {
+func (eh *EventHandler) CreateEvent(context *gin.Context) {
 
 	var event models.Event
 	err := context.ShouldBindJSON(&event)
@@ -57,7 +66,7 @@ func CreateEvent(context *gin.Context) {
 	userId := context.GetUint("userId")
 	event.UserID = userId
 
-	err = event.Save()
+	err = event.Save(eh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{
@@ -69,14 +78,14 @@ func CreateEvent(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{"message": "Event created!", "event": event})
 }
 
-func UpdateEvent(context *gin.Context) {
+func (eh *EventHandler) UpdateEvent(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse event id"})
 		return
 	}
 
-	event, err := models.GetEventById(id)
+	event, err := models.GetEventById(id, eh.dbConn)
 
 	if err != nil {
 		fmt.Println(err)
@@ -104,7 +113,7 @@ func UpdateEvent(context *gin.Context) {
 
 	updatedEvent.ID = event.ID
 
-	err = updatedEvent.Update()
+	err = updatedEvent.Update(eh.dbConn)
 
 	if err != nil {
 		fmt.Println(err)
@@ -117,7 +126,7 @@ func UpdateEvent(context *gin.Context) {
 	context.JSON(http.StatusOK, gin.H{"message": "event updated successfully", "updated_event": updatedEvent})
 }
 
-func DeleteEvent(context *gin.Context) {
+func (eh *EventHandler) DeleteEvent(context *gin.Context) {
 	id, err := strconv.ParseInt(context.Param("id"), 10, 64)
 
 	if err != nil {
@@ -125,7 +134,7 @@ func DeleteEvent(context *gin.Context) {
 		return
 	}
 
-	event, err := models.GetEventById(id)
+	event, err := models.GetEventById(id, eh.dbConn)
 
 	if event == nil && err == nil {
 		context.JSON(http.StatusNotFound, gin.H{"message": "Event not found"})
@@ -145,7 +154,7 @@ func DeleteEvent(context *gin.Context) {
 		return
 	}
 
-	err = event.Delete()
+	err = event.Delete(eh.dbConn)
 
 	if err != nil {
 		fmt.Println(err)

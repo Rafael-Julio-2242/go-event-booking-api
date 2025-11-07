@@ -1,6 +1,8 @@
 package models
 
-import "event-booking-rest-api/pkg/db"
+import (
+	"gorm.io/gorm"
+)
 
 type Registration struct {
 	ID      uint `gorm:"primaryKey;autoIncrement"`
@@ -8,8 +10,8 @@ type Registration struct {
 	EventId uint `gorm:"not null"`
 }
 
-func (r *Registration) Save() error {
-	result := db.DB.Create(r)
+func (r *Registration) Save(dbConn *gorm.DB) error {
+	result := dbConn.Create(r)
 
 	if result.Error != nil {
 		return result.Error

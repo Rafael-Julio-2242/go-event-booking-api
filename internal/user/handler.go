@@ -6,9 +6,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func Signup(context *gin.Context) {
+type UserHandler struct {
+	dbConn *gorm.DB
+}
+
+func NewUserHandler(dbConn *gorm.DB) *UserHandler {
+	return &UserHandler{dbConn: dbConn}
+}
+
+func (uh *UserHandler) Signup(context *gin.Context) {
 	var user models.User
 
 	err := context.ShouldBindBodyWithJSON(&user)
@@ -27,7 +36,7 @@ func Signup(context *gin.Context) {
 
 	user.Password = hashedPassword
 
-	err = user.Save()
+	err = user.Save(uh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not save user!"})
@@ -37,7 +46,7 @@ func Signup(context *gin.Context) {
 	context.JSON(http.StatusCreated, gin.H{"message": "User created successfully"})
 }
 
-func Login(context *gin.Context) {
+func (uh *UserHandler) Login(context *gin.Context) {
 	var user models.User
 
 	err := context.ShouldBindBodyWithJSON(&user)
@@ -47,7 +56,7 @@ func Login(context *gin.Context) {
 		return
 	}
 
-	err = user.ValidateCredentials()
+	err = user.ValidateCredentials(uh.dbConn)
 
 	if err != nil {
 		context.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid Credentials"})
